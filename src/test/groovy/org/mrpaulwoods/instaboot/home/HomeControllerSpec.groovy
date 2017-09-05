@@ -2,14 +2,16 @@ package org.mrpaulwoods.instaboot.home
 
 import org.mrpaulwoods.instaboot.post.Post
 import org.mrpaulwoods.instaboot.post.PostService
+import org.mrpaulwoods.instaboot.security.SecurityService
 import org.springframework.ui.Model
 import spock.lang.Specification
 
 class HomeControllerSpec extends Specification {
 
     PostService postService = Mock(PostService)
+    SecurityService securityService = Mock(SecurityService)
 
-    HomeController controller = new HomeController(postService)
+    HomeController controller = new HomeController(postService, securityService)
 
     Model model = Mock(Model)
 

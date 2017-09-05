@@ -62,9 +62,9 @@ class CommentServiceSpec extends Specification {
         ret == comment1
     }
 
-    def "upload delegates to the repository"() {
+    def "update delegates to the repository"() {
         when:
-        service.upload(comment1)
+        service.update(comment1)
 
         then:
         1 * commentRepository.save(comment1) >> comment1

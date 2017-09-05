@@ -18,9 +18,9 @@ class ThumbnailServiceSpec extends Specification {
     Image image1 = new Image(
             id:200,
             post: post1,
-            content: new ClassPathResource("01.jpg").inputStream.bytes,
-            name: "01.jpg",
-            contentType: "application/jpg",
+            content: new ClassPathResource("01.png").inputStream.bytes,
+            name: "01.png",
+            contentType: "application/png",
             imageType: ImageType.ORIGINAL
     )
 
@@ -37,8 +37,8 @@ class ThumbnailServiceSpec extends Specification {
 
         1 * imageService.create(_) >> { Image i ->
             assert i.post.id == 100
-            assert i.name == "01.jpg"
-            assert i.contentType == "application/jpg"
+            assert i.name == "01.png"
+            assert i.contentType == "application/png"
             assert i.content != null
             assert i.imageType == ImageType.THUMBNAIL
             i.id = 300

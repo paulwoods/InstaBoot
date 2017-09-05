@@ -33,7 +33,7 @@ class PostService {
         post
     }
 
-    void upload(Post post) {
+    void update(Post post) {
         postRepository.save post
     }
 

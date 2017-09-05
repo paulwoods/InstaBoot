@@ -22,6 +22,8 @@
         <a th:href="@{/post/show/{id}(id=${post.id})}">
             <img src="#" th:src="@{/image/content/{id}(id=${@imageService.fetchThumbnailImage(post).id})}"/>
         </a>
+        <div th:text="${post.user.username}"></div>
+        <div th:text="${@imageService.fetchThumbnailImage(post).name}"></div>
     </div>
 
 </div>

@@ -36,7 +36,8 @@ class ThumbnailService {
                 name: image.name,
                 contentType: image.contentType,
                 content: baos.toByteArray(),
-                imageType: ImageType.THUMBNAIL
+                imageType: ImageType.THUMBNAIL,
+                user: image.user
         ))
 
         image2

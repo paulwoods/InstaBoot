@@ -1,6 +1,7 @@
 package org.mrpaulwoods.instaboot.comment
 
 import org.mrpaulwoods.instaboot.post.Post
+import org.mrpaulwoods.instaboot.security.user.User
 
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -17,6 +18,10 @@ class Comment implements Serializable {
     @GeneratedValue
     @Id
     Long id
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    User user
 
     @ManyToOne
     @JoinColumn(name = "post_id")

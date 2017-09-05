@@ -35,7 +35,7 @@ class CommentService {
         comment
     }
 
-    void upload(Comment comment) {
+    void update(Comment comment) {
         commentRepository.save comment
     }
 

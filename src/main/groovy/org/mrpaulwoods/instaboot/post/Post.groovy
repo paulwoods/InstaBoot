@@ -1,6 +1,7 @@
 package org.mrpaulwoods.instaboot.post
 
 import org.mrpaulwoods.instaboot.image.Image
+import org.mrpaulwoods.instaboot.security.user.User
 
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -17,6 +18,10 @@ class Post implements Serializable {
     @GeneratedValue
     @Id
     Long id
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    User user
 
     @Column(length=2000)
     String text

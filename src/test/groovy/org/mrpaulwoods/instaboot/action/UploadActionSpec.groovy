@@ -5,6 +5,7 @@ import org.mrpaulwoods.instaboot.image.ImageService
 import org.mrpaulwoods.instaboot.image.ImageType
 import org.mrpaulwoods.instaboot.post.Post
 import org.mrpaulwoods.instaboot.post.PostService
+import org.mrpaulwoods.instaboot.security.user.User
 import org.mrpaulwoods.instaboot.thumbnail.ThumbnailService
 import org.mrpaulwoods.instaboot.upload.UploadForm
 import org.springframework.core.io.ClassPathResource
@@ -18,6 +19,8 @@ class UploadActionSpec extends Specification {
     ThumbnailService thumbnailService = Mock(ThumbnailService)
 
     UploadAction action = new UploadAction(imageService, postService, thumbnailService)
+
+    User user1 = new User(id:100)
 
     def setup() {
         0 * _
@@ -33,12 +36,12 @@ class UploadActionSpec extends Specification {
         )
 
         when:
-        def ret = action.execute(uploadForm)
+        def ret = action.execute(uploadForm, user1)
 
         then:
-        1 * content.getOriginalFilename() >> "01.jpg"
-        1 * content.getContentType() >> "application/jpg"
-        1 * content.getBytes() >> new ClassPathResource("01.jpg").inputStream.bytes
+        1 * content.getOriginalFilename() >> "01.png"
+        1 * content.getContentType() >> "application/png"
+        1 * content.getBytes() >> new ClassPathResource("01.png").inputStream.bytes
         1 * postService.create(_) >> { Post p ->
             assert p.text == "the post"
             p.id = 100
@@ -47,8 +50,8 @@ class UploadActionSpec extends Specification {
 
         1 * imageService.create(_) >> { Image i ->
             assert i.post.id == 100
-            assert i.name == "01.jpg"
-            assert i.contentType == "application/jpg"
+            assert i.name == "01.png"
+            assert i.contentType == "application/png"
             assert i.content != null
             assert i.imageType == ImageType.ORIGINAL
             i.id = 200
@@ -59,9 +62,6 @@ class UploadActionSpec extends Specification {
 
         and:
         ret.id == 100
-
-
-
     }
 
 }

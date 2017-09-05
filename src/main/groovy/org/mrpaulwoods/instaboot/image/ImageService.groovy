@@ -34,7 +34,7 @@ class ImageService {
         image
     }
 
-    void upload(Image image) {
+    void update(Image image) {
         imageRepository.save image
     }
 

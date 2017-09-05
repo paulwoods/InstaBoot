@@ -18,6 +18,11 @@
         </div>
         <div class="col-md-4">
 
+            <div th:text="${post.user.username}"></div>
+            <div th:text="${post.text}"></div>
+
+            <hr/>
+
             <div>
 
                 <form th:action="@{/comment/save/{id}(id=${post.id})}" method="post" th:object="${commentForm}">
@@ -43,16 +48,15 @@
 
             <h4>Comments</h4>
 
-            <ul>
-                <li th:each="comment : ${comments}" th:text="${comment.text}"></li>
-            </ul>
-
+            <div th:each="comment : ${comments}">
+                <div th:text="${comment.user.username}"></div>
+                <div th:text="${comment.text}"></div>
+                <br/>
+            </div>
 
         </div>
+
     </div>
-
-
-
 
 </div>
 

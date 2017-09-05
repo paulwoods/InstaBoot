@@ -7,6 +7,7 @@ import org.mrpaulwoods.instaboot.image.ImageService
 import org.mrpaulwoods.instaboot.image.ImageType
 import org.mrpaulwoods.instaboot.post.Post
 import org.mrpaulwoods.instaboot.post.PostService
+import org.mrpaulwoods.instaboot.security.user.User
 import org.mrpaulwoods.instaboot.thumbnail.ThumbnailService
 import org.mrpaulwoods.instaboot.upload.UploadForm
 import org.springframework.stereotype.Service
@@ -31,18 +32,20 @@ class UploadAction {
         this.thumbnailService = thumbnailService
     }
 
-    Post execute(UploadForm uploadForm) {
+    Post execute(UploadForm uploadForm, User user) {
 
         execute uploadForm.content.originalFilename,
                 uploadForm.content.contentType,
                 uploadForm.content.bytes,
-                uploadForm.text
+                uploadForm.text,
+                user
     }
 
-    Post execute(String name, String contentType, byte[] content, String text) {
+    Post execute(String name, String contentType, byte[] content, String text, User user) {
 
         Post post = postService.create(new Post(
-                text: text
+                text: text,
+                user: user
         ))
 
         Image image = imageService.create(new Image(
@@ -50,7 +53,8 @@ class UploadAction {
                 name: name,
                 contentType: contentType,
                 content: content,
-                imageType: ImageType.ORIGINAL
+                imageType: ImageType.ORIGINAL,
+                user: user
         ))
 
         thumbnailService.execute image

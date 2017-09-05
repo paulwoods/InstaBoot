@@ -66,9 +66,9 @@ class ImageServiceSpec extends Specification {
         ret == image1
     }
 
-    def "upload delegates to the repository"() {
+    def "update delegates to the repository"() {
         when:
-        service.upload(image1)
+        service.update(image1)
 
         then:
         1 * imageRepository.save(image1) >> image1

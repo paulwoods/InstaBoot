@@ -5,6 +5,7 @@ import org.mrpaulwoods.instaboot.comment.CommentForm
 import org.mrpaulwoods.instaboot.comment.CommentService
 import org.mrpaulwoods.instaboot.image.Image
 import org.mrpaulwoods.instaboot.image.ImageService
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
@@ -31,6 +32,7 @@ class PostController {
     }
 
     @GetMapping("/show/{id}")
+    @PreAuthorize("permitAll")
     String show(@PathVariable Long id, final Model model) {
         Post post = postService.fetch(id)
         model.addAttribute "post", post

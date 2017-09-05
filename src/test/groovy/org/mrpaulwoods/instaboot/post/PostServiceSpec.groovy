@@ -64,9 +64,9 @@ class PostServiceSpec extends Specification {
         ret == post1
     }
 
-    def "upload delegates to the repository"() {
+    def "update delegates to the repository"() {
         when:
-        service.upload(post1)
+        service.update(post1)
 
         then:
         1 * postRepository.save(post1) >> post1
