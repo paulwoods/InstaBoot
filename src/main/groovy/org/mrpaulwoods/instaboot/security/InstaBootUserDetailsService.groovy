@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service
 import javax.annotation.PostConstruct
 
 @Service
-class InstaBootUserDetailsService { // implements UserDetailsService {
+class InstaBootUserDetailsService implements UserDetailsService {
 
     @Autowired
     UserRepository userRepository
@@ -22,7 +22,7 @@ class InstaBootUserDetailsService { // implements UserDetailsService {
     @Autowired
     AuthorityRepository authorityRepository
 
-//    @Override
+    @Override
     UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
         if (user)

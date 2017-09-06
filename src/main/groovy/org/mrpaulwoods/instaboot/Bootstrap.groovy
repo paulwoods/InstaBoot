@@ -38,47 +38,47 @@ class Bootstrap {
     @PostConstruct
     void init() {
 
-//        User user = securityService.register("mr.paul.woods@gmail.com", "123456")
-//
-//        Post post1 = uploadAction.execute(
-//                "all code is guilty until proven innocent",
-//                "image/png",
-//                new ClassPathResource("01.png").inputStream.bytes,
-//                "anonymous quote",
-//                user
-//        )
-//
-//        commentService.create(new Comment(
-//                post: post1,
-//                text: "This is the first comment.",
-//                user: user
-//        ))
-//
-//        commentService.create(new Comment(
-//                post: post1,
-//                text: "This is the second comment.",
-//                user: user
-//        ))
-//
-//        Post post2 = uploadAction.execute(
-//                "hello world",
-//                "image/png",
-//                new ClassPathResource("02.png").inputStream.bytes,
-//                "when a geek is born",
-//                user
-//        )
-//
-//        commentService.create(new Comment(
-//                post: post2,
-//                text: "This is the third comment.",
-//                user: user
-//        ))
-//
-//        commentService.create(new Comment(
-//                post: post2,
-//                text: "This is the fourth comment.",
-//                user: user
-//        ))
+        User user = securityService.register("mr.paul.woods@gmail.com", "11111")
+
+        Post post1 = uploadAction.execute(
+                "all code is guilty until proven innocent",
+                "image/png",
+                new ClassPathResource("01.png").inputStream.bytes,
+                "anonymous quote",
+                user
+        )
+
+        commentService.create(new Comment(
+                post: post1,
+                text: "This is the first comment.",
+                user: user
+        ))
+
+        commentService.create(new Comment(
+                post: post1,
+                text: "This is the second comment.",
+                user: user
+        ))
+
+        Post post2 = uploadAction.execute(
+                "hello world",
+                "image/png",
+                new ClassPathResource("02.png").inputStream.bytes,
+                "when a geek is born",
+                user
+        )
+
+        commentService.create(new Comment(
+                post: post2,
+                text: "This is the third comment.",
+                user: user
+        ))
+
+        commentService.create(new Comment(
+                post: post2,
+                text: "This is the fourth comment.",
+                user: user
+        ))
 
     }
 

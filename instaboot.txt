@@ -11,12 +11,111 @@ scope
 
 	system will display x number of "latest" images on the home page
 
-basic mvc	
-	creating controller
-	creating view
+
+create project
+
+create new spring initializr project
+    group: org.mrpaulwoods
+    artifact: instaboot
+    type: gradle project
+    language: groovy
+    packagin: war
+    java version: 1.8
+
+	dependencies:
+        core: security, devtools
+        web: web
+        template engines: thymeleaf
+        sql: jpa, h2
+        ops: Actuator
+
+	check use auto-import
+
 
 hello world
-	- security default password
+
+
+create home.HomeController
+
+    package org.mrpaulwoods.instaboot.home
+
+    import groovy.util.logging.Slf4j
+    import org.springframework.stereotype.Controller
+    import org.springframework.web.bind.annotation.GetMapping
+    import org.springframework.web.bind.annotation.RequestMapping
+
+    @Slf4j
+    @Controller
+    @RequestMapping
+    class HomeController {
+
+        @GetMapping
+        String index() {
+            "home/index"
+        }
+    }
+
+
+create home/index.html
+
+    <!DOCTYPE html>
+
+    <html   xmlns:layout="http://www.w3.org/1999/xhtml"
+            xmlns="http://www.w3.org/1999/xhtml">
+
+    <body>
+
+        <h1>Hello World</h1>
+
+    </body>
+
+    </html>
+
+
+hello world
+	- security user = "user"
+	- password is displayed in the log file
+
+
+
+
+
+
+
+Paul's Practices
+    no List<Child> children in the domain objects
+    - there nothing wrong with doing this. but you may end up with some
+       ugly circular dependencies when serializing to json/xml/...
+
+
+        one package per
+            domain
+            feature
+            this leads to a lot of packages, with one or just a few classes inside
+            advantage is that if a domain/feature needs to change, its easy to find the classes
+
+    repositories are DMZ objects between the app and the data
+        - only accessed by services
+        - access database, rest endpoints, external configuration files, ...
+        - speak the language of the data source
+
+    services
+        - translate the language of the data source to the language of the application
+        - usually only access one domain
+        - exceptions - may access parent or child domains
+
+    why - so if a datasource changes, the repository should be the only thing that changes
+        - in some cases, the service will need to change
+        - isolates changes to a small footprint of code.
+
+    one class for each complex user action
+        suffix = Action, package = action
+        keeps the complex code isolated
+        makes it easy compose complete actions made up of other simpler actions
+
+    first, make it work. then make it work better.
+        - don't worry about performance issues and perfect algorithms at the beginning.
+        - make it work first. let the user's test it, and improve where necessary.
 
 
 instaboot model
@@ -142,6 +241,13 @@ class Comment implements Serializable {
 
 create services
 	services generally access one datasource
+        create
+        read
+        update
+        delete
+        list
+        findByXyz
+        findAllByXyz
 
 
 actions
@@ -151,8 +257,8 @@ actions
 upload image
 	create upload controller
 	create upload.html
-
 	create UploadForm
+	    -why forms and not entities
 
 	create upload action
 	create uploadCreate action
@@ -160,6 +266,164 @@ upload image
 	create post
 	create image
 		- refactor into UploadAction
+
+
+    upload.UploadForm
+
+    package org.mrpaulwoods.instaboot.upload
+
+    import groovy.transform.Canonical
+    import org.springframework.web.multipart.MultipartFile
+
+    import javax.validation.constraints.NotNull
+    import javax.validation.constraints.Size
+
+    @Canonical
+
+    class UploadForm implements Serializable {
+
+        private static final long serialVersionUID = 0
+
+        MultipartFile content
+
+        @NotNull
+        @Size(min=1, max=2000)
+        String text
+
+        boolean hasContent() {
+            !content.empty
+        }
+
+    }
+
+
+
+    upload.UploadController
+
+    package org.mrpaulwoods.instaboot.upload
+
+    import groovy.util.logging.Slf4j
+    import org.mrpaulwoods.instaboot.action.UploadAction
+    import org.mrpaulwoods.instaboot.image.ImageService
+    import org.mrpaulwoods.instaboot.security.SecurityService
+    import org.springframework.security.access.prepost.PreAuthorize
+    import org.springframework.stereotype.Controller
+    import org.springframework.ui.Model
+    import org.springframework.validation.BindingResult
+    import org.springframework.web.bind.annotation.GetMapping
+    import org.springframework.web.bind.annotation.PostMapping
+    import org.springframework.web.bind.annotation.RequestMapping
+
+    import javax.validation.Valid
+
+    @Slf4j
+    @Controller
+    @RequestMapping("/upload")
+    class UploadController {
+
+        private ImageService imageService
+        private UploadAction uploadAction
+        private SecurityService securityService
+
+        UploadController(
+                ImageService imageService,
+                UploadAction uploadAction,
+                SecurityService securityService
+        ) {
+            this.imageService = imageService
+            this.uploadAction = uploadAction
+            this.securityService = securityService
+        }
+
+        @GetMapping
+        @PreAuthorize("hasRole(['ROLE_USER])")
+        String index(final Model model) {
+            model.addAttribute "uploadForm", new UploadForm()
+            "upload/index"
+        }
+
+        @PostMapping("/create")
+        @PreAuthorize("hasRole(['ROLE_USER])")
+        String create(@Valid UploadForm uploadForm, BindingResult result) {
+            if (result.hasErrors()) {
+                "upload/index"
+            } else if (!uploadForm.hasContent()) {
+                "upload/index"
+            } else {
+                uploadAction.execute uploadForm, securityService.currentUser
+                "redirect:/"
+            }
+        }
+
+    }
+
+
+    action.UploadAction
+
+    package org.mrpaulwoods.instaboot.action
+
+    import groovy.util.logging.Slf4j
+    import org.mrpaulwoods.instaboot.image.Image
+    import org.mrpaulwoods.instaboot.image.ImageService
+    import org.mrpaulwoods.instaboot.image.ImageType
+    import org.mrpaulwoods.instaboot.post.Post
+    import org.mrpaulwoods.instaboot.post.PostService
+    import org.mrpaulwoods.instaboot.security.user.User
+ //   import org.mrpaulwoods.instaboot.thumbnail.ThumbnailService
+    import org.mrpaulwoods.instaboot.upload.UploadForm
+    import org.springframework.stereotype.Service
+    import org.springframework.transaction.annotation.Transactional
+
+    @Slf4j
+    @Service
+    @Transactional
+    class UploadAction {
+
+        private ImageService imageService
+        private PostService postService
+        //private ThumbnailService thumbnailService
+
+        UploadAction(
+                ImageService imageService,
+                PostService postService
+                //ThumbnailService thumbnailService
+        ) {
+            this.imageService = imageService
+            this.postService = postService
+           // this.thumbnailService = thumbnailService
+        }
+
+        Post execute(UploadForm uploadForm, User user) {
+
+            execute uploadForm.content.originalFilename,
+                    uploadForm.content.contentType,
+                    uploadForm.content.bytes,
+                    uploadForm.text,
+                    user
+        }
+
+        Post execute(String name, String contentType, byte[] content, String text, User user) {
+
+            Post post = postService.create(new Post(
+                    text: text,
+                    user: user
+            ))
+
+            Image image = imageService.create(new Image(
+                    post: post,
+                    name: name,
+                    contentType: contentType,
+                    content: content,
+                    imageType: ImageType.ORIGINAL,
+                    user: user
+            ))
+
+            // thumbnailService.execute image
+
+            post
+        }
+
+    }
 
 
 configure tomcat to handle 4mb uploads
@@ -171,15 +435,122 @@ bootstrap
 	create some dummy posts,images,comments
 
 
-update home to show multiple images
+
+    package org.mrpaulwoods.instaboot
+
+    import groovy.util.logging.Slf4j
+    import org.mrpaulwoods.instaboot.action.UploadAction
+    import org.mrpaulwoods.instaboot.comment.Comment
+    import org.mrpaulwoods.instaboot.comment.CommentService
+    import org.mrpaulwoods.instaboot.post.Post
+    import org.mrpaulwoods.instaboot.security.SecurityService
+    import org.mrpaulwoods.instaboot.security.authority.Authority
+    import org.mrpaulwoods.instaboot.security.authority.AuthorityService
+    import org.mrpaulwoods.instaboot.security.user.User
+    import org.mrpaulwoods.instaboot.security.user.UserService
+    import org.springframework.core.io.ClassPathResource
+    import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+    import org.springframework.stereotype.Service
+    import org.springframework.transaction.annotation.Transactional
+    import javax.annotation.PostConstruct
+
+    @Slf4j
+    @Service
+    @Transactional
+    class Bootstrap {
+
+        private UploadAction uploadAction
+        private CommentService commentService
+        private SecurityService securityService
+
+        Bootstrap(
+                UploadAction uploadAction,
+                CommentService commentService,
+                SecurityService securityService
+        ) {
+            this.uploadAction = uploadAction
+            this.commentService = commentService
+            this.securityService = securityService
+        }
+
+        @PostConstruct
+        void init() {
+
+            User user = securityService.register("mr.paul.woods@gmail.com", "11111")
+
+            Post post1 = uploadAction.execute(
+                    "all code is guilty until proven innocent",
+                    "image/png",
+                    new ClassPathResource("01.png").inputStream.bytes,
+                    "anonymous quote",
+                    user
+            )
+
+            commentService.create(new Comment(
+                    post: post1,
+                    text: "This is the first comment.",
+                    user: user
+            ))
+
+            commentService.create(new Comment(
+                    post: post1,
+                    text: "This is the second comment.",
+                    user: user
+            ))
+
+            Post post2 = uploadAction.execute(
+                    "hello world",
+                    "image/png",
+                    new ClassPathResource("02.png").inputStream.bytes,
+                    "when a geek is born",
+                    user
+            )
+
+            commentService.create(new Comment(
+                    post: post2,
+                    text: "This is the third comment.",
+                    user: user
+            ))
+
+            commentService.create(new Comment(
+                    post: post2,
+                    text: "This is the fourth comment.",
+                    user: user
+            ))
+
+        }
+
+    }
+
+update home page to show multiple images
+
+    home.HomeController
+
+    @GetMapping
+    String index(final Model model) {
+        model.addAttribute "posts", postService.list()
+        "home/index"
+    }
+
+
+    home/index.html
+
+    <h4>Latest Images</h4>
+
+    <div style="display: inline-block; margin: 1em; padding: 1em;" th:each="post : ${posts}">
+        <a th:href="@{/post/show/{id}(id=${post.id})}">
+            <img src="#" th:src="@{/image/content/{id}(id=${@imageService.fetchThumbnailImage(post).id})}"/>
+        </a>
+        <div th:text="${post.user.username}"></div>
+        <div th:text="${@imageService.fetchThumbnailImage(post).name}"></div>
+    </div>
 
 
 add thumbnail service
 	
 	compile 'net.coobird:thumbnailator:0.4.8'
 	
-	update UploadAction to create thumbnail
-
+	update UploadAction to call thumbnailService.execute image
 
 	package org.mrpaulwoods.instaboot.thumbnail
 
@@ -232,16 +603,121 @@ add thumbnail service
 
 click on image goes to its show page
 
+    post.PostController
 
-implement create comment
+    @GetMapping("/show/{id}")
+    @PreAuthorize("permitAll")
+    String show(@PathVariable Long id, final Model model) {
+        Post post = postService.fetch(id)
+        model.addAttribute "post", post
+        model.addAttribute "image", imageService.fetchOriginalImage(post)
+        model.addAttribute "comments", commentService.findAllByPost(post)
+        model.addAttribute "commentForm", new CommentForm(postId: post.id)
+        "post/show"
+    }
 
-	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')
 
-update ui
+
+    post/show.html
+
+    <!DOCTYPE html>
+
+    <html
+            xmlns:layout="http://www.w3.org/1999/xhtml"
+            xmlns="http://www.w3.org/1999/xhtml"
+            xmlns:th="http://www.thymeleaf.org"
+            layout:decorator="instaboot">
+
+    <body>
+
+    <div layout:fragment="body">
+
+        <h2 th:text="${image.name}"></h2>
+
+        <div class="row">
+            <div class="col-md-8">
+                <img th:src="@{/image/content/{id}(id=${image.id})}"/>
+            </div>
+            <div class="col-md-4">
+
+                <div th:text="${post.user.username}"></div>
+                <div th:text="${post.text}"></div>
+
+                <hr/>
+
+                <div>
+
+                    <form th:action="@{/comment/save/{id}(id=${post.id})}" method="post" th:object="${commentForm}">
+
+                        <div class="form-group">
+                            <label>Add Comment</label>
+                            <textarea  class="form-control" th:field="*{text}"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <input  class="form-control" type="hidden" th:field="*{postId}"/>
+                        </div>
+
+                        <div>
+                            <button class="btn btn-primary">Add</button>
+                        </div>
+
+                    </form>
+
+                </div>
+
+                <hr/>
+
+                <h4>Comments</h4>
+
+                <div th:each="comment : ${comments}">
+                    <div th:text="${comment.user.username}"></div>
+                    <div th:text="${comment.text}"></div>
+                    <br/>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    </body>
+
+    </html>
+
+
+    comment.CommentController
+
+
+    @RequestMapping("/save/{postId}")
+    @PreAuthorize("hasRole(['ROLE_USER])")
+    String save(@PathVariable Long postId, @Valid CommentForm commentForm, BindingResult result, final Model model) {
+        Post post = postService.fetch(postId)
+        if(result.hasErrors()) {
+            model.addAttribute "post", post
+            model.addAttribute "image", imageService.fetchOriginalImage(post)
+            model.addAttribute "comments", commentService.findAllByPost(post)
+            model.addAttribute "commentForm", new CommentForm(postId: post.id)
+            "post/show"
+        } else {
+            commentService.create new Comment(
+                    post: post,
+                    text: commentForm.text,
+                    user: securityService.currentUser)
+            "redirect:/post/show/$postId"
+        }
+    }
+
+
+
+
+update ui to bootstrap
     compile 'org.webjars:jquery:3.2.1'
 	compile 'org.webjars:bootstrap:3.3.7-1'
 
 	instaboot.html
+
 	<!DOCTYPE html>
 
 	<html lang="en"
@@ -345,11 +821,13 @@ unit tests
 	testCompile 'org.objenesis:objenesis:2.5.1'
 
 jacoco
-apply plugin: 'jacoco'
 
-jacoco {
-	reportsDir = file("$buildDir/reports/jacoco")
-}
+
+    apply plugin: 'jacoco'
+
+    jacoco {
+        reportsDir = file("$buildDir/reports/jacoco")
+    }
 
 
 
@@ -357,237 +835,3 @@ jacoco {
 update security
 
 	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')
-
-
-
-
-
-
-
-
-
-create new spring initializr project
-group: org.mrpaulwoods
-artifact: instaboot
-type: gradle project
-language: groovy
-packagin: war
-java version: 1.8
-
-	dependencies:
-
-
-	check use auto-import
-
-
-### HELLO WORLD ###
-
-// before 1st successful build, 
-// note: comment out the tomcat starter
-// note: create first controller and template and css
-
-
-
-comment out build.gradle
-	// providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
-
-
-
-create org.mrpaulwoods.instaboot.home.HomeController.groovy
-
-package org.mrpaulwoods.instaboot.home
-
-import groovy.util.logging.Slf4j
-import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-
-@Slf4j
-@Controller
-@RequestMapping
-class HomeController {
-
-    @GetMapping
-    String index() {
-        "home/index"
-    }
-    
-}
-
-
-
-create src/main/resources/templates/home/index.html
-
-<!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <title>Insta Boot</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <link rel="stylesheet" type="text/css" media="all" href="#" th:href="@{/css/styles.css}"/>
-</head>
-
-<body>
-
-<h1>InstaBoot Images</h1>
-
-</body>
-
-</html>
-
-
-create src/main/resources/static/css/styles.css
-	- leave it blank
-
-
-run the app
-	user name: user
-	password: in the log file
-
-
-
-
-in order to not need to lookup the password from the log everytime, set a hard-coded password
-
-edit src/main/resources/application.properties
-security.user.password=password
-
-
-
-#### upoad an image, save it, and display it ####
-
-flow:
-	from home page, user clicks upload link
-	the upload form is displayed
-	user selects the file to upload and clicks upload
-	app stores the picture in the database
-	app redirects to show page, and shows the image.
-
-
-
-modify src/main/resources/templates/home/index.html
-
-	<div>
-	    <a href="#" th:href="@{/upload}">Upload Image</a>
-	</div>
-
-
-create the upload controller
-
-
-	package org.mrpaulwoods.instaboot.upload
-
-	import groovy.util.logging.Slf4j
-	import org.springframework.stereotype.Controller
-	import org.springframework.web.bind.annotation.GetMapping
-	import org.springframework.web.bind.annotation.RequestMapping
-
-	@Slf4j
-	@Controller
-	@RequestMapping("/upload")
-	class UploadController {
-
-	    @GetMapping
-	    String index() {
-	        "upload/index"
-	    }
-
-	}
-
-
-create org.mrpaulwoods.instaboot.upload.UploadController.groovy
-
-	package org.mrpaulwoods.instaboot.upload
-
-	import groovy.util.logging.Slf4j
-	import org.springframework.stereotype.Controller
-	import org.springframework.web.bind.annotation.GetMapping
-	import org.springframework.web.bind.annotation.RequestMapping
-
-	@Slf4j
-	@Controller
-	@RequestMapping("/upload")
-	class UploadController {
-
-	    @GetMapping
-	    String index() {
-	        "upload/index"
-	    }
-
-	}
-
-
-
-create src/main/resources/templates/upload/index.html
-
-	<!DOCTYPE html>
-
-	<html xmlns="http://www.w3.org/1999/xhtml"
-	      xmlns:th="http://www.thymeleaf.org">
-
-	<head>
-	    <title>Insta Boot</title>
-	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-	    <link rel="stylesheet" type="text/css" media="all" href="#" th:href="@{/css/styles.css}"/>
-	</head>
-
-	<body>
-
-	<h1>Upload Image</h1>
-
-	<div>
-
-	    <form th:action="@{/upload/create}" method="post" enctype="multipart/form-data">
-
-	        <div>
-	            <label for="file">Select File</label>
-	            <input id="file" type="file" name="content"/>
-	        </div>
-
-	        <div>
-	            <button>Upload</button>
-	        </div>
-
-	    </form>
-
-	</div>
-
-	</body>
-
-	</html>
-
-
-test the form. we will get a 404 because upload/create was not found.
-
-
-create a upload form 
-
-
-
-
-
-
-
-
-
-
-create image entity
-create image service
-create image repository
-
-
-
-
-
-
-
-
-
-
-
-
-
-modify org.mrpaulwoods.instaboot.upload.UploadController.groovy
-

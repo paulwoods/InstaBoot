@@ -45,7 +45,7 @@ class UploadController {
     String create(@Valid UploadForm uploadForm, BindingResult result) {
         if (result.hasErrors()) {
             "upload/index"
-        } else if (uploadForm.content?.empty) {
+        } else if (uploadForm.hasContent()) {
             "upload/index"
         } else {
             uploadAction.execute uploadForm, securityService.currentUser

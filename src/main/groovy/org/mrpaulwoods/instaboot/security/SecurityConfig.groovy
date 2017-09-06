@@ -10,21 +10,21 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
-//@Configuration
-//@EnableWebSecurity
-//@EnableGlobalMethodSecurity(securedEnabled = true)
-class SecurityConfig { // extends WebSecurityConfigurerAdapter {
+@Configuration
+@EnableWebSecurity
+@EnableGlobalMethodSecurity(securedEnabled = true)
+class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     InstaBootUserDetailsService instaBootUserDetailsService
 
-    //@Override
+    @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth.userDetailsService(instaBootUserDetailsService)
                 .passwordEncoder(new BCryptPasswordEncoder())
     }
 
-    //@Override
+    @Override
     protected void configure(HttpSecurity http) {
         http
                 .csrf().disable()
