@@ -7,6 +7,7 @@ import org.mrpaulwoods.instaboot.security.SecurityService
 import org.mrpaulwoods.instaboot.security.user.User
 import org.springframework.ui.Model
 import org.springframework.validation.BindingResult
+import org.springframework.web.multipart.MultipartFile
 import spock.lang.Specification
 
 class UploadControllerSpec extends Specification {
@@ -19,8 +20,9 @@ class UploadControllerSpec extends Specification {
 
     Model model = Mock(Model)
     BindingResult result = Mock(BindingResult)
+    MultipartFile content = Mock(MultipartFile)
 
-    UploadForm uploadForm1 = new UploadForm()
+    UploadForm uploadForm1 = new UploadForm(content: content)
     Post post1 = new Post()
     User user1 = new User()
 
@@ -36,14 +38,41 @@ class UploadControllerSpec extends Specification {
         ret == "upload/index"
     }
 
-    def "create delegates to the upload action and redirects to the home page"() {
+    def "create (fails databinding) returns the index view"() {
 
         when:
         def ret = controller.create(uploadForm1, result)
 
         then:
+        1 * result.hasErrors() >> true
+
+        and:
+        ret == "upload/index"
+    }
+
+    def "create (fails no-content) returns the index view"() {
+
+        when:
+        def ret = controller.create(uploadForm1, result)
+
+        then:
+        1 * result.hasErrors() >> false
+        1 * content.isEmpty() >> true
+
+        and:
+        ret == "upload/index"
+    }
+
+    def "create (success) returns the index view"() {
+
+        when:
+        def ret = controller.create(uploadForm1, result)
+
+        then:
+        1 * result.hasErrors() >> false
+        1 * content.isEmpty() >> false
         1 * securityService.getCurrentUser() >> user1
-        1 * uploadAction.execute(uploadForm1, user1) >> post1
+        1 * uploadAction.execute(uploadForm1, user1)
 
         and:
         ret == "redirect:/"
