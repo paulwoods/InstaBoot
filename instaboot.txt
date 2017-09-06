@@ -1,18 +1,6 @@
 
-getting started
-
-scope
-	create post
-		- has text content
-		- has one image
-		- has zero-to-many comments
-
-	system will create a thumbnail for the image
-
-	system will display x number of "latest" images on the home page
-
-
 create project
+=============================================================================
 
 create new spring initializr project
     group: org.mrpaulwoods
@@ -32,10 +20,12 @@ create new spring initializr project
 	check use auto-import
 
 
-hello world
+create hello world app
+=============================================================================
 
 
 create home.HomeController
+=============================================================================
 
     package org.mrpaulwoods.instaboot.home
 
@@ -57,6 +47,7 @@ create home.HomeController
 
 
 create home/index.html
+=============================================================================
 
     <!DOCTYPE html>
 
@@ -72,175 +63,201 @@ create home/index.html
     </html>
 
 
-hello world
-	- security user = "user"
-	- password is displayed in the log file
+run the hello world app
+=============================================================================
 
-
-
-
-
-
-
-Paul's Practices
-    no List<Child> children in the domain objects
-    - there nothing wrong with doing this. but you may end up with some
-       ugly circular dependencies when serializing to json/xml/...
-
-
-        one package per
-            domain
-            feature
-            this leads to a lot of packages, with one or just a few classes inside
-            advantage is that if a domain/feature needs to change, its easy to find the classes
-
-    repositories are DMZ objects between the app and the data
-        - only accessed by services
-        - access database, rest endpoints, external configuration files, ...
-        - speak the language of the data source
-
-    services
-        - translate the language of the data source to the language of the application
-        - usually only access one domain
-        - exceptions - may access parent or child domains
-
-    why - so if a datasource changes, the repository should be the only thing that changes
-        - in some cases, the service will need to change
-        - isolates changes to a small footprint of code.
-
-    one class for each complex user action
-        suffix = Action, package = action
-        keeps the complex code isolated
-        makes it easy compose complete actions made up of other simpler actions
-
-    first, make it work. then make it work better.
-        - don't worry about performance issues and perfect algorithms at the beginning.
-        - make it work first. let the user's test it, and improve where necessary.
+security
+    user = "user"
+    password is displayed in the log file
 
 
 instaboot model
-	post
-	has many images. each image has a type (original, thumbnail)
-	has many comments.
+=============================================================================
+
+Post
+    stores the text for the post
+
+Image
+    stores the blob for the image
+    1 post has many images
+
+Comment
+    stores the text for the comment
+    1 post has many comments
+
+
 
 
 basic spring data
-	creating jpa entities
-	creating repositories
+=============================================================================
+
+	creating jpa entities and repositories
 
 
-package org.mrpaulwoods.instaboot.post
 
-import org.mrpaulwoods.instaboot.image.Image
-import org.mrpaulwoods.instaboot.security.user.User
+### create post.PostRepository
 
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
 
-@Entity
-class Post implements Serializable {
+    package org.mrpaulwoods.instaboot.post
 
-    private static final long serialVersionUID = 0
+    import org.mrpaulwoods.instaboot.image.Image
+    import org.mrpaulwoods.instaboot.security.user.User
 
-    @GeneratedValue
-    @Id
-    Long id
+    import javax.persistence.Column
+    import javax.persistence.Entity
+    import javax.persistence.GeneratedValue
+    import javax.persistence.Id
+    import javax.persistence.JoinColumn
+    import javax.persistence.ManyToOne
 
-    @ManyToOne
-    @JoinColumn(name="user_id")
-    User user
+    @Entity
+    class Post implements Serializable {
 
-    @Column(length=2000)
-    String text
-}
+        private static final long serialVersionUID = 0
 
-package org.mrpaulwoods.instaboot.image
+        @GeneratedValue
+        @Id
+        Long id
 
-import org.mrpaulwoods.instaboot.post.Post
-import org.mrpaulwoods.instaboot.security.user.User
+        @ManyToOne
+        @JoinColumn(name="user_id")
+        User user
 
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.Lob
-import javax.persistence.ManyToOne
+        @Column(length=2000)
+        String text
+    }
 
-@Entity
-class Image implements Serializable {
 
-    private static final long serialVersionUID = 0
 
-    @GeneratedValue
-    @Id
-    Long id
 
-    @ManyToOne
-    @JoinColumn(name="user_id")
-    User user
+### create post.PostRepository
 
-    @ManyToOne
-    @JoinColumn(name="post_id")
-    Post post
+    package org.mrpaulwoods.instaboot.post
 
-    @Lob
-    @Column(length = 4194304) // 4MB
-    byte[] content
+    import org.springframework.data.jpa.repository.JpaRepository
 
-    @Column(length = 300)
-    String name
+    interface PostRepository extends JpaRepository<Post, Long> {
+    }
 
-    @Column(length = 200)
-    String contentType
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50)
-    ImageType imageType
-}
 
-package org.mrpaulwoods.instaboot.comment
+### create image.ImageRepository
 
-import org.mrpaulwoods.instaboot.post.Post
-import org.mrpaulwoods.instaboot.security.user.User
+    package org.mrpaulwoods.instaboot.image
 
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
+    import org.mrpaulwoods.instaboot.post.Post
+    import org.mrpaulwoods.instaboot.security.user.User
 
-@Entity
-class Comment implements Serializable {
+    import javax.persistence.Column
+    import javax.persistence.Entity
+    import javax.persistence.EnumType
+    import javax.persistence.Enumerated
+    import javax.persistence.GeneratedValue
+    import javax.persistence.Id
+    import javax.persistence.JoinColumn
+    import javax.persistence.Lob
+    import javax.persistence.ManyToOne
 
-    private static final long serialVersionUID = 0
+    @Entity
+    class Image implements Serializable {
 
-    @GeneratedValue
-    @Id
-    Long id
+        private static final long serialVersionUID = 0
 
-    @ManyToOne
-    @JoinColumn(name="user_id")
-    User user
+        @GeneratedValue
+        @Id
+        Long id
 
-    @ManyToOne
-    @JoinColumn(name = "post_id")
-    Post post
+        @ManyToOne
+        @JoinColumn(name="user_id")
+        User user
 
-    @Column(length = 2000)
-    String text
-}
+        @ManyToOne
+        @JoinColumn(name="post_id")
+        Post post
+
+        @Lob
+        @Column(length = 4194304) // 4MB
+        byte[] content
+
+        @Column(length = 300)
+        String name
+
+        @Column(length = 200)
+        String contentType
+
+        @Enumerated(EnumType.STRING)
+        @Column(length = 50)
+        ImageType imageType
+    }
+
+### create post.ImageRepository
+
+
+    package org.mrpaulwoods.instaboot.image
+
+    import org.mrpaulwoods.instaboot.post.Post
+    import org.springframework.data.jpa.repository.JpaRepository
+
+    interface ImageRepository extends JpaRepository<Image, Long> {
+        Image findByPostAndImageType(Post post, ImageType imageType)
+    }
+
+
+    create comment.Comment
+
+    package org.mrpaulwoods.instaboot.comment
+
+    import org.mrpaulwoods.instaboot.post.Post
+    import org.mrpaulwoods.instaboot.security.user.User
+
+    import javax.persistence.Column
+    import javax.persistence.Entity
+    import javax.persistence.GeneratedValue
+    import javax.persistence.Id
+    import javax.persistence.JoinColumn
+    import javax.persistence.ManyToOne
+
+    @Entity
+    class Comment implements Serializable {
+
+        private static final long serialVersionUID = 0
+
+        @GeneratedValue
+        @Id
+        Long id
+
+        @ManyToOne
+        @JoinColumn(name="user_id")
+        User user
+
+        @ManyToOne
+        @JoinColumn(name = "post_id")
+        Post post
+
+        @Column(length = 2000)
+        String text
+    }
+
+
+
+### create comment.CommentRepository
+
+    package org.mrpaulwoods.instaboot.comment
+
+    import org.mrpaulwoods.instaboot.post.Post
+    import org.springframework.data.jpa.repository.JpaRepository
+
+    interface CommentRepository extends JpaRepository<Comment, Long> {
+        List<Comment> findAllByPost(Post post)
+    }
+
 
 
 create services
-	services generally access one datasource
+=============================================================================
+
+	services generally access one datasource.
+	we follow this general pattern for method names:
         create
         read
         update
@@ -250,7 +267,9 @@ create services
         findAllByXyz
 
 
-actions
+=============================================================================
+create the upload function
+
 	access multiple services to perform a user's task
 
 
@@ -268,7 +287,7 @@ upload image
 		- refactor into UploadAction
 
 
-    upload.UploadForm
+### create upload.UploadForm
 
     package org.mrpaulwoods.instaboot.upload
 
@@ -298,7 +317,7 @@ upload image
 
 
 
-    upload.UploadController
+### create upload.UploadController
 
     package org.mrpaulwoods.instaboot.upload
 
@@ -358,7 +377,7 @@ upload image
     }
 
 
-    action.UploadAction
+### create action.UploadAction
 
     package org.mrpaulwoods.instaboot.action
 
@@ -427,14 +446,20 @@ upload image
 
 
 configure tomcat to handle 4mb uploads
-	application.properties
+=============================================================================
+
+### edit application.properties
 	spring.http.multipart.max-file-size=4194304
 
 
-bootstrap
+
+create bootstrap file to load database with dummy data
+=============================================================================
+
 	create some dummy posts,images,comments
 
 
+### create BootStrap.groovy
 
     package org.mrpaulwoods.instaboot
 
@@ -522,9 +547,13 @@ bootstrap
 
     }
 
-update home page to show multiple images
 
-    home.HomeController
+
+
+update home page to show multiple images
+=============================================================================
+
+### edit home.HomeController
 
     @GetMapping
     String index(final Model model) {
@@ -533,7 +562,7 @@ update home page to show multiple images
     }
 
 
-    home/index.html
+### edit home/index.html
 
     <h4>Latest Images</h4>
 
@@ -547,12 +576,20 @@ update home page to show multiple images
 
 
 add thumbnail service
-	
-	compile 'net.coobird:thumbnailator:0.4.8'
-	
-	update UploadAction to call thumbnailService.execute image
+=============================================================================
 
-	package org.mrpaulwoods.instaboot.thumbnail
+### edit build.gradle
+
+	compile 'net.coobird:thumbnailator:0.4.8'
+
+
+### update UploadAction to call thumbnailService.execute image
+
+
+
+### create thumbnail.ThumbnailService
+
+    package org.mrpaulwoods.instaboot.thumbnail
 
 	import groovy.util.logging.Slf4j
 	import net.coobird.thumbnailator.Thumbnails
@@ -602,8 +639,9 @@ add thumbnail service
 
 
 click on image goes to its show page
+==============================================================================
 
-    post.PostController
+### edit post.PostController
 
     @GetMapping("/show/{id}")
     @PreAuthorize("permitAll")
@@ -618,7 +656,7 @@ click on image goes to its show page
 
 
 
-    post/show.html
+### edit post/show.html
 
     <!DOCTYPE html>
 
@@ -686,8 +724,31 @@ click on image goes to its show page
 
     </html>
 
+### create comment.CommentForm
 
-    comment.CommentController
+
+    package org.mrpaulwoods.instaboot.comment
+
+    import groovy.transform.Canonical
+
+    import javax.validation.constraints.NotNull
+    import javax.validation.constraints.Size
+
+    @Canonical
+    class CommentForm implements Serializable {
+
+        private static final long serialVersionUID = 0
+
+        @NotNull
+        Long postId
+
+        @NotNull
+        @Size(min = 1, max = 2000)
+        String text
+    }
+
+
+### edit comment.CommentController
 
 
     @RequestMapping("/save/{postId}")
@@ -712,11 +773,21 @@ click on image goes to its show page
 
 
 
-update ui to bootstrap
+update ui
+=============================================================================
+
+    add bootstrap
+    use thymeleaf decorator and templates
+
+
+### edit build.gradle
+
     compile 'org.webjars:jquery:3.2.1'
 	compile 'org.webjars:bootstrap:3.3.7-1'
 
-	instaboot.html
+
+
+### edit instaboot.html
 
 	<!DOCTYPE html>
 
@@ -773,7 +844,8 @@ update ui to bootstrap
 	</html>
 
 
-	home/index.html
+### edit home/index.html
+
 	<!DOCTYPE html>
 
 	<html
@@ -810,6 +882,7 @@ update ui to bootstrap
 
 
 unit tests
+=============================================================================
 
 	testCompile('org.spockframework:spock-core:1.1-groovy-2.4') {
 		exclude module: 'groovy-all'
@@ -821,7 +894,7 @@ unit tests
 	testCompile 'org.objenesis:objenesis:2.5.1'
 
 jacoco
-
+=============================================================================
 
     apply plugin: 'jacoco'
 
@@ -829,9 +902,7 @@ jacoco
         reportsDir = file("$buildDir/reports/jacoco")
     }
 
-
-
-
 update security
+=============================================================================
 
 	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')
