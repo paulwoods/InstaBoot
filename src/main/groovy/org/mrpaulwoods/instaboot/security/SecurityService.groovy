@@ -28,7 +28,7 @@ class SecurityService {
     }
 
     User getCurrentUser() {
-        def user = SecurityContextHolder.context.authentication.principal
+        def user = userService.findByUsername(SecurityContextHolder.context.authentication.name)
         if(user instanceof User) {
             user
         } else {

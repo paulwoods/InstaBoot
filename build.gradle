@@ -41,6 +41,7 @@ dependencies {
 
     compile 'org.webjars:jquery:3.2.1'
 	compile 'org.webjars:bootstrap:3.3.7-1'
+
     compile 'net.coobird:thumbnailator:0.4.8'
 
 	testCompile('org.springframework.boot:spring-boot-starter-test')
@@ -55,8 +56,8 @@ dependencies {
 	testCompile 'org.objenesis:objenesis:2.5.1'
 }
 
-jacoco {
-	reportsDir = file("$buildDir/reports/jacoco")
-}
+    jacoco {
+        reportsDir = file("$buildDir/reports/jacoco")
+    }
 
 

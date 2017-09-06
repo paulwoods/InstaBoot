@@ -1,0 +1,593 @@
+
+getting started
+
+scope
+	create post
+		- has text content
+		- has one image
+		- has zero-to-many comments
+
+	system will create a thumbnail for the image
+
+	system will display x number of "latest" images on the home page
+
+basic mvc	
+	creating controller
+	creating view
+
+hello world
+	- security default password
+
+
+instaboot model
+	post
+	has many images. each image has a type (original, thumbnail)
+	has many comments.
+
+
+basic spring data
+	creating jpa entities
+	creating repositories
+
+
+package org.mrpaulwoods.instaboot.post
+
+import org.mrpaulwoods.instaboot.image.Image
+import org.mrpaulwoods.instaboot.security.user.User
+
+import javax.persistence.Column
+import javax.persistence.Entity
+import javax.persistence.GeneratedValue
+import javax.persistence.Id
+import javax.persistence.JoinColumn
+import javax.persistence.ManyToOne
+
+@Entity
+class Post implements Serializable {
+
+    private static final long serialVersionUID = 0
+
+    @GeneratedValue
+    @Id
+    Long id
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    User user
+
+    @Column(length=2000)
+    String text
+}
+
+package org.mrpaulwoods.instaboot.image
+
+import org.mrpaulwoods.instaboot.post.Post
+import org.mrpaulwoods.instaboot.security.user.User
+
+import javax.persistence.Column
+import javax.persistence.Entity
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
+import javax.persistence.GeneratedValue
+import javax.persistence.Id
+import javax.persistence.JoinColumn
+import javax.persistence.Lob
+import javax.persistence.ManyToOne
+
+@Entity
+class Image implements Serializable {
+
+    private static final long serialVersionUID = 0
+
+    @GeneratedValue
+    @Id
+    Long id
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    User user
+
+    @ManyToOne
+    @JoinColumn(name="post_id")
+    Post post
+
+    @Lob
+    @Column(length = 4194304) // 4MB
+    byte[] content
+
+    @Column(length = 300)
+    String name
+
+    @Column(length = 200)
+    String contentType
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    ImageType imageType
+}
+
+package org.mrpaulwoods.instaboot.comment
+
+import org.mrpaulwoods.instaboot.post.Post
+import org.mrpaulwoods.instaboot.security.user.User
+
+import javax.persistence.Column
+import javax.persistence.Entity
+import javax.persistence.GeneratedValue
+import javax.persistence.Id
+import javax.persistence.JoinColumn
+import javax.persistence.ManyToOne
+
+@Entity
+class Comment implements Serializable {
+
+    private static final long serialVersionUID = 0
+
+    @GeneratedValue
+    @Id
+    Long id
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    User user
+
+    @ManyToOne
+    @JoinColumn(name = "post_id")
+    Post post
+
+    @Column(length = 2000)
+    String text
+}
+
+
+create services
+	services generally access one datasource
+
+
+actions
+	access multiple services to perform a user's task
+
+
+upload image
+	create upload controller
+	create upload.html
+
+	create UploadForm
+
+	create upload action
+	create uploadCreate action
+
+	create post
+	create image
+		- refactor into UploadAction
+
+
+configure tomcat to handle 4mb uploads
+	application.properties
+	spring.http.multipart.max-file-size=4194304
+
+
+bootstrap
+	create some dummy posts,images,comments
+
+
+update home to show multiple images
+
+
+add thumbnail service
+	
+	compile 'net.coobird:thumbnailator:0.4.8'
+	
+	update UploadAction to create thumbnail
+
+
+	package org.mrpaulwoods.instaboot.thumbnail
+
+	import groovy.util.logging.Slf4j
+	import net.coobird.thumbnailator.Thumbnails
+	import org.mrpaulwoods.instaboot.image.Image
+	import org.mrpaulwoods.instaboot.image.ImageService
+	import org.mrpaulwoods.instaboot.image.ImageType
+	import org.springframework.stereotype.Service
+	import org.springframework.transaction.annotation.Transactional
+
+	@Slf4j
+	@Service
+	@Transactional
+	class ThumbnailService {
+
+	    private ImageService imageService
+
+	    ThumbnailService(
+	            ImageService imageService
+	    ) {
+	        this.imageService = imageService
+	    }
+
+	    Image execute(Image image) {
+
+	        ByteArrayInputStream bais = new ByteArrayInputStream(image.content)
+	        ByteArrayOutputStream baos = new ByteArrayOutputStream()
+
+	        Thumbnails
+	                .of(bais)
+	                .size(120,120)
+	                .toOutputStream(baos)
+
+	        Image image2 = imageService.create(new Image(
+	                post: image.post,
+	                name: image.name,
+	                contentType: image.contentType,
+	                content: baos.toByteArray(),
+	                imageType: ImageType.THUMBNAIL,
+	                user: image.user
+	        ))
+
+	        image2
+	    }
+
+	}
+
+
+
+click on image goes to its show page
+
+
+implement create comment
+
+	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')
+
+update ui
+    compile 'org.webjars:jquery:3.2.1'
+	compile 'org.webjars:bootstrap:3.3.7-1'
+
+	instaboot.html
+	<!DOCTYPE html>
+
+	<html lang="en"
+	      xmlns:th="http://www.thymeleaf.org"
+	      xmlns:layout="http://www.w3.org/1999/xhtml"
+	      xmlns="http://www.w3.org/1999/xhtml">
+
+	<head>
+	    <meta charset="utf-8"/>
+	    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+	    <title>Insta Boot</title>
+	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	    <link rel="stylesheet" th:href="@{/webjars/bootstrap/3.3.7-1/css/bootstrap.min.css}"/>
+	    <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+
+	</head>
+
+	<body>
+
+	<nav class="navbar navbar-default">
+	    <div class="container-fluid">
+	        <div class="navbar-header">
+	            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	                <span class="sr-only">Toggle navigation</span>
+	                <span class="icon-bar"></span>
+	                <span class="icon-bar"></span>
+	                <span class="icon-bar"></span>
+	            </button>
+	            <a class="navbar-brand" th:href="@{/}">InstaBoot Images</a>
+	        </div>
+	        <div id="navbar" class="navbar-collapse collapse">
+	            <ul class="nav navbar-nav">
+	                <li><a th:href="@{/}">Home</a></li>
+	                <li><a th:href="@{/upload}">Upload</a></li>
+	            </ul>
+	            <ul class="nav navbar-nav navbar-right">
+	                <li th:if="${#authentication.name == 'anonymousUser'}"><a th:href="@{/login}">login</a></li>
+	                <li th:if="${#authentication.name != 'anonymousUser'}"><a th:href="@{/logout}" th:text="${#authentication.name}">user name</a></li>
+	            </ul>
+	        </div><!--/.nav-collapse -->
+	    </div><!--/.container-fluid -->
+	</nav>
+
+	<div class="container-fluid">
+	    <div layout:fragment="body"></div>
+	</div>
+
+	<script th:src="@{/webjars/jquery/3.2.1/jquery.min.js}"></script>
+	<script th:src="@{/webjars/bootstrap/3.3.7-1/js/bootstrap.min.js}"></script>
+
+	</body>
+
+	</html>
+
+
+	home/index.html
+	<!DOCTYPE html>
+
+	<html
+	        xmlns:layout="http://www.w3.org/1999/xhtml"
+	        xmlns="http://www.w3.org/1999/xhtml"
+	        xmlns:th="http://www.thymeleaf.org"
+	        layout:decorator="instaboot">
+
+	<body>
+
+	<div layout:fragment="body">
+
+	    <div class="row">
+	        <div class="col-md-12">
+	            <h2 class="text-center">Welcome To InstaBoot</h2>
+	        </div>
+	    </div>
+
+	    <h4>Latest Images</h4>
+
+	    <div style="display: inline-block; margin: 1em; padding: 1em;" th:each="post : ${posts}">
+	        <a th:href="@{/post/show/{id}(id=${post.id})}">
+	            <img src="#" th:src="@{/image/content/{id}(id=${@imageService.fetchThumbnailImage(post).id})}"/>
+	        </a>
+	        <div th:text="${post.user.username}"></div>
+	        <div th:text="${@imageService.fetchThumbnailImage(post).name}"></div>
+	    </div>
+
+	</div>
+
+	</body>
+
+	</html>
+
+
+unit tests
+
+	testCompile('org.spockframework:spock-core:1.1-groovy-2.4') {
+		exclude module: 'groovy-all'
+	}
+	testCompile('org.spockframework:spock-spring:1.1-groovy-2.4') {
+		exclude module: 'groovy-all'
+	}
+	testCompile 'cglib:cglib-nodep:3.2.5'
+	testCompile 'org.objenesis:objenesis:2.5.1'
+
+jacoco
+apply plugin: 'jacoco'
+
+jacoco {
+	reportsDir = file("$buildDir/reports/jacoco")
+}
+
+
+
+
+update security
+
+	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4')
+
+
+
+
+
+
+
+
+
+create new spring initializr project
+group: org.mrpaulwoods
+artifact: instaboot
+type: gradle project
+language: groovy
+packagin: war
+java version: 1.8
+
+	dependencies:
+
+
+	check use auto-import
+
+
+### HELLO WORLD ###
+
+// before 1st successful build, 
+// note: comment out the tomcat starter
+// note: create first controller and template and css
+
+
+
+comment out build.gradle
+	// providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
+
+
+
+create org.mrpaulwoods.instaboot.home.HomeController.groovy
+
+package org.mrpaulwoods.instaboot.home
+
+import groovy.util.logging.Slf4j
+import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+
+@Slf4j
+@Controller
+@RequestMapping
+class HomeController {
+
+    @GetMapping
+    String index() {
+        "home/index"
+    }
+    
+}
+
+
+
+create src/main/resources/templates/home/index.html
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Insta Boot</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" type="text/css" media="all" href="#" th:href="@{/css/styles.css}"/>
+</head>
+
+<body>
+
+<h1>InstaBoot Images</h1>
+
+</body>
+
+</html>
+
+
+create src/main/resources/static/css/styles.css
+	- leave it blank
+
+
+run the app
+	user name: user
+	password: in the log file
+
+
+
+
+in order to not need to lookup the password from the log everytime, set a hard-coded password
+
+edit src/main/resources/application.properties
+security.user.password=password
+
+
+
+#### upoad an image, save it, and display it ####
+
+flow:
+	from home page, user clicks upload link
+	the upload form is displayed
+	user selects the file to upload and clicks upload
+	app stores the picture in the database
+	app redirects to show page, and shows the image.
+
+
+
+modify src/main/resources/templates/home/index.html
+
+	<div>
+	    <a href="#" th:href="@{/upload}">Upload Image</a>
+	</div>
+
+
+create the upload controller
+
+
+	package org.mrpaulwoods.instaboot.upload
+
+	import groovy.util.logging.Slf4j
+	import org.springframework.stereotype.Controller
+	import org.springframework.web.bind.annotation.GetMapping
+	import org.springframework.web.bind.annotation.RequestMapping
+
+	@Slf4j
+	@Controller
+	@RequestMapping("/upload")
+	class UploadController {
+
+	    @GetMapping
+	    String index() {
+	        "upload/index"
+	    }
+
+	}
+
+
+create org.mrpaulwoods.instaboot.upload.UploadController.groovy
+
+	package org.mrpaulwoods.instaboot.upload
+
+	import groovy.util.logging.Slf4j
+	import org.springframework.stereotype.Controller
+	import org.springframework.web.bind.annotation.GetMapping
+	import org.springframework.web.bind.annotation.RequestMapping
+
+	@Slf4j
+	@Controller
+	@RequestMapping("/upload")
+	class UploadController {
+
+	    @GetMapping
+	    String index() {
+	        "upload/index"
+	    }
+
+	}
+
+
+
+create src/main/resources/templates/upload/index.html
+
+	<!DOCTYPE html>
+
+	<html xmlns="http://www.w3.org/1999/xhtml"
+	      xmlns:th="http://www.thymeleaf.org">
+
+	<head>
+	    <title>Insta Boot</title>
+	    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	    <link rel="stylesheet" type="text/css" media="all" href="#" th:href="@{/css/styles.css}"/>
+	</head>
+
+	<body>
+
+	<h1>Upload Image</h1>
+
+	<div>
+
+	    <form th:action="@{/upload/create}" method="post" enctype="multipart/form-data">
+
+	        <div>
+	            <label for="file">Select File</label>
+	            <input id="file" type="file" name="content"/>
+	        </div>
+
+	        <div>
+	            <button>Upload</button>
+	        </div>
+
+	    </form>
+
+	</div>
+
+	</body>
+
+	</html>
+
+
+test the form. we will get a 404 because upload/create was not found.
+
+
+create a upload form 
+
+
+
+
+
+
+
+
+
+
+create image entity
+create image service
+create image repository
+
+
+
+
+
+
+
+
+
+
+
+
+
+modify org.mrpaulwoods.instaboot.upload.UploadController.groovy
+
