@@ -2,4 +2,4 @@
 ## Running
 Windows: gradlew bootRun
 
-Linux: ./gradle bootRun
+Linux: ./gradlew bootRun
